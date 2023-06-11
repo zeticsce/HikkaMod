@@ -147,12 +147,23 @@ class Evaluator(loader.Module):
 
     strings = {"name": "Evaluator"}
 
+    def __init__(self):
+        self.config = loader.ModuleConfig(
+            loader.ConfigValue(
+                'code startswith',
+                'None',
+                "С этого кода начинается код, выполненный через .e\n",
+                validator=loader.validators.String(),
+            ),
+        )
+
     @loader.command(alias="eval")
     async def e(self, message: Message):
         """Evaluates python code"""
         try:
             result = await meval(
-                utils.get_args_raw(message),
+                ';'.join(self.config['code startswith'].splitlines())
+                + '\n' + utils.get_args_raw(message),
                 globals(),
                 **await self.getattrs(message),
             )

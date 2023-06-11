@@ -7,6 +7,7 @@
 import difflib
 import inspect
 import logging
+import re
 
 from hikkatl.extensions.html import CUSTOM_EMOJIS
 from hikkatl.tl.types import Message
@@ -30,13 +31,13 @@ class HelpMod(loader.Module):
                 "core_emoji",
                 "▪️",
                 lambda: "Core module bullet",
-                validator=loader.validators.Emoji(length=1),
+                validator=loader.validators.String(),
             ),
             loader.ConfigValue(
                 "plain_emoji",
                 "▫️",
                 lambda: "Plain module bullet",
-                validator=loader.validators.Emoji(length=1),
+                validator=loader.validators.String(),
             ),
             loader.ConfigValue(
                 "empty_emoji",
@@ -359,18 +360,41 @@ class HelpMod(loader.Module):
         no_commands_.sort(key=lambda x: x.split()[1])
         dragon_.sort()
 
-        await utils.answer(
-            message,
-            "{}\n{}{}".format(
-                reply,
-                "".join(core_ + plain_ + dragon_ + (no_commands_ if force else [])),
-                (
-                    ""
-                    if self.lookup("Loader").fully_loaded
-                    else f"\n\n{self.strings('partial_load')}"
-                ),
-            ),
+        text = "{}\n{}{}".format(
+            reply,
+            "".join(core_ + plain_ + dragon_ + (no_commands_ if force else [])),
+            (
+                ""
+                if self.lookup("Loader").fully_loaded
+                else f"\n\n{self.strings('partial_load')}"
+            )
         )
+        
+        def rm(text: str) -> str: # by hikari
+            return re.sub(r"</?emoji.*?>", "", text)
+        
+        if not (await self._client.get_me()).premium:
+            text = rm(text)
+
+        async def _callback(call):
+            await call.edit('\xad')
+            await call.delete()
+
+        if len(text) < 4096:
+            await message.respond(
+                text,
+                reply_to=await message.get_reply_message()
+            )
+            return await message.delete()
+
+            return await self.inline.form(
+                text,
+                message,
+                {'text': '🔻 Close', 'callback': _callback},
+                silent=True
+            )
+        
+        await utils.answer(message, rm(text))
 
     @loader.command()
     async def support(self, message):
