@@ -356,11 +356,6 @@ class TestMod(loader.Module):
                 round((time.perf_counter_ns() - start) / 10**6, 3),
                 utils.formatted_uptime(),
             )
-            + (
-                ("\n\n" + self.strings("ping_hint"))
-                if random.choice([0, 0, 1]) == 1
-                else ""
-            ),
         )
 
     async def client_ready(self):
