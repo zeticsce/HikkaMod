@@ -97,7 +97,7 @@ class UpdateNotifierMod(loader.Module):
                 "https://t.me/hikari_assets/71",
                 caption=self.strings("update_required").format(
                     utils.get_git_hash()[:6],
-                    '<a href="https://github.com/hikariatama/Hikka/compare/{}...{}">{}</a>'
+                    '<a href="https://github.com/zeticsce/HikkaMod/compare/{}...{}">{}</a>'
                     .format(
                         utils.get_git_hash()[:12],
                         self.get_latest()[:12],
