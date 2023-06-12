@@ -821,7 +821,10 @@ class LoaderMod(loader.Module):
                         await utils.answer(message, self.strings("load_failed"))
 
                     return
-
+                with contextlib.suppress(Exception):
+                    await self.allmodules.unload_module(
+                   	instance.__class__.__name__
+                )
                 instance.hikka_meta_pic = next(
                     (
                         line.replace(" ", "").split("#metapic:", maxsplit=1)[1]
