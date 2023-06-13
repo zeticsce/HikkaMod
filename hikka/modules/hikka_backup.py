@@ -14,6 +14,7 @@ import os
 import time
 import zipfile
 from pathlib import Path
+import pytz
 
 from hikkatl.tl.types import Message
 
@@ -126,7 +127,7 @@ class HikkaBackupMod(loader.Module):
 
             backup = io.BytesIO(json.dumps(self._db).encode())
             backup.name = (
-                f"hikka-db-backup-{datetime.datetime.now():%d-%m-%Y-%H-%M}.json"
+                f"hikka-db-backup-{datetime.datetime.now(pytz.timezone('Asia/Almaty')):%d-%m-%Y-%H-%M}.json"
             )
 
             await self._client.send_file(self._backup_channel, backup)
@@ -208,11 +209,17 @@ class HikkaBackupMod(loader.Module):
     @loader.command()
     async def restoremods(self, message: Message):
         """<reply to file> - Restore modules from backup"""
-        if not (reply := await message.get_reply_message()) or not reply.media:
-            await utils.answer(message, self.strings("reply_to_file"))
-            return
-
-        file = await reply.download_media(bytes)
+#         if not (reply := await message.get_reply_message()) or not reply.media:
+#             await utils.answer(message, self.strings("reply_to_file"))
+#             return
+        try:
+            file = await (reply := await message.get_reply_message()).download_media(bytes)
+        except Exception:
+            import traceback
+            return await utils.answer(message,
+                f'произошла хуета:\n'
+                f'<code>{traceback.format_exc()}</code>'
+            )
         try:
             decoded_text = json.loads(file.decode())
         except Exception:
