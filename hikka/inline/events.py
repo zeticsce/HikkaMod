@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class Events(InlineUnit):
     async def _message_handler(self, message: AiogramMessage):
         """Processes incoming messages"""
-        if message.chat.type != "private" or message.text == "/start hikka init":
+        if message.text == "/start hikka init":
             return
 
         for mod in self._allmodules.modules:
