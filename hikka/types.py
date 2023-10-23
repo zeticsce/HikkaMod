@@ -487,8 +487,8 @@ class Module:
             code.raise_for_status()
             code = code.text
         
-        elif string_code:
-            url, code = string_code
+        elif source_code:
+            url, code = source_code
 
         else:
             _raise(ValueError(''))
