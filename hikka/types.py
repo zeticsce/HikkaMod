@@ -479,11 +479,11 @@ class Module:
 
             raise e
 
-        if not utils.check_url(url):
-            _raise(ValueError("Invalid url for library"))
-
         code = None 
         if url:
+            if not utils.check_url(url):
+                _raise(ValueError("Invalid url for library"))
+
             code = await utils.run_sync(requests.get, url)
             code.raise_for_status()
             code = code.text
