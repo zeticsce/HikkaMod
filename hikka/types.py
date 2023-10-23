@@ -451,7 +451,7 @@ class Module:
         self,
         url: str,
         *,
-        source_code: typing.Optional[typing.List['Library name', 'Library code']] = None,
+        source_code: "typing.Optional[typing.List['Library name', 'Library code']]" = None,
         suspend_on_error: typing.Optional[bool] = False,
         _did_requirements: bool = False,
     ) -> "Library":
