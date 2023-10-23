@@ -451,14 +451,14 @@ class Module:
         self,
         url: str,
         *,
-        string_code: typing.Optional[str] = None,
+        source_code: typing.Optional[typing.List['Library name', 'Library code']] = None,
         suspend_on_error: typing.Optional[bool] = False,
         _did_requirements: bool = False,
     ) -> "Library":
         """
         Import library from url and register it in :obj:`Modules`
         :param url: Url to import
-        :param code: String with code of library
+        :param source: лень писать
         :param suspend_on_error: Will raise :obj:`loader.SelfSuspend` if library can't be loaded
         :return: :obj:`Library`
         :raise: SelfUnload if :attr:`suspend_on_error` is True and error occurred
@@ -479,7 +479,6 @@ class Module:
 
             raise e
 
-        code = None 
         if url:
             if not utils.check_url(url):
                 _raise(ValueError("Invalid url for library"))
@@ -487,8 +486,12 @@ class Module:
             code = await utils.run_sync(requests.get, url)
             code.raise_for_status()
             code = code.text
+        
+        elif string_code:
+            url, code = string_code
 
-        code = code or string_code
+        else:
+            _raise(ValueError(''))
 
         if re.search(r"# ?scope: ?hikka_min", code):
             ver = tuple(
