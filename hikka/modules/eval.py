@@ -19,6 +19,9 @@ from hikkatl.sessions import StringSession
 from hikkatl.tl.types import Message
 from meval import meval
 
+import re 
+import asyncio
+
 from .. import loader, main, utils
 from ..log import HikkaException
 
@@ -147,22 +150,11 @@ class Evaluator(loader.Module):
 
     strings = {"name": "Evaluator"}
 
-    def __init__(self):
-        self.config = loader.ModuleConfig(
-            loader.ConfigValue(
-                'code startswith',
-                'None',
-                "С этого кода начинается код, выполненный через .e\n",
-                validator=loader.validators.String(),
-            ),
-        )
-
     @loader.command(alias="eval")
     async def e(self, message: Message):
         try:
             result = await meval(
-                ';'.join(self.config['code startswith'].splitlines())
-                + '\n' + utils.get_args_raw(message),
+                utils.get_args_raw(message),
                 globals(),
                 **await self.getattrs(message),
             )
@@ -200,6 +192,57 @@ class Evaluator(loader.Module):
                     utils.escape_html(self.censor(str(result))),
                 ),
             )
+
+    @loader.command(alias="enote")
+    async def en(self, message: Message):
+        """<note> Evaluates python code from note in NotesMod by Hikari"""
+        hnotes = self._db.get('NotesMod', 'notes', {})
+        asset_id = None
+
+        if not (_args_raw := utils.get_args_raw(message)):
+            return await utils.answer(message,
+                '<emoji document_id=5210952531676504517>❌</emoji> <b>No note provided</b>'
+            )
+
+        for category, notes in hnotes.items():
+            for note, asset in notes.items():
+                if _args_raw.startswith(note):
+                    parser = hikkatl.utils.sanitize_parse_mode("html")
+
+                    raw_text, entities = parser.parse(message.text)
+                    raw_text = parser._add_surrogate(raw_text)
+
+                    offset = len(raw_text.split(note)[0]) + len(note) + 1
+
+                    asset_id = asset['id']
+                    _args_raw = _args_raw[len(note):].strip()
+                    _args = list(filter(lambda x: x, _args_raw.split()))
+                    _args_lower = [_.lower() for _ in _args]
+                    _args_html = parser.unparse(
+                        parser._del_surrogate(raw_text[offset:].strip()),
+                        utils.relocate_entities(entities, -offset, raw_text[offset:].strip()),
+                    )
+
+        if asset_id is None or not (asset := await self._db.fetch_asset(asset_id)):
+            return await utils.answer(message,
+                f'<emoji document_id=5210952531676504517>❌</emoji> <b>Note not found!</b>'
+            )
+
+        if not asset.raw_text:
+            return await answer(message,
+                f'<emoji document_id=5210952531676504517>❌</emoji> <b>Note does not contain text!</b>'
+            )
+
+        return await meval(
+            asset.raw_text,
+            globals(),
+            **await self.getattrs(message),
+            _args_raw=_args_raw,
+            _args=_args,
+            _args_lower=_args_lower,
+            _args_html=_args_html,
+            _asset=asset
+        )
 
     @loader.command()
     async def ecpp(self, message: Message, c: bool = False):
@@ -453,6 +496,8 @@ class Evaluator(loader.Module):
         return ret
 
     async def getattrs(self, message: Message) -> dict:
+        import asyncio, re
+
         reply = await message.get_reply_message()
         return {
             "message": message,
@@ -474,6 +519,8 @@ class Evaluator(loader.Module):
             "lookup": self.lookup,
             "self": self,
             "db": self.db,
+            "asyncio": asyncio,
+            "re": re,
         }
 
     def get_sub(self, obj: typing.Any, _depth: int = 1) -> dict:
