@@ -152,6 +152,10 @@ class Evaluator(loader.Module):
 
     @loader.command(alias="eval")
     async def e(self, message: Message):
+        code = (
+            f'<pre><code class="language-python">{utils.get_args_raw(message)}</code></pre>'
+        )
+
         try:
             result = await meval(
                 utils.get_args_raw(message),
@@ -165,7 +169,7 @@ class Evaluator(loader.Module):
                 message,
                 self.strings("err").format(
                     "4985626654563894116",
-                    utils.escape_html(utils.get_args_raw(message)),
+                    code,
                     self.censor(
                         (
                             "\n".join(item.full_stack.splitlines()[:-1])
@@ -188,9 +192,7 @@ class Evaluator(loader.Module):
                 message,
                 self.strings("eval").format(
                     "4985626654563894116",
-                    '<pre><code class="language-python">{}</code></pre>'.format(
-                        utils.escape_html(utils.get_args_raw(message))
-                    ),
+                    code,
                     utils.escape_html(self.censor(str(result))),
                 ),
             )
