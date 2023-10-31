@@ -188,7 +188,9 @@ class Evaluator(loader.Module):
                 message,
                 self.strings("eval").format(
                     "4985626654563894116",
-                    utils.escape_html(utils.get_args_raw(message)),
+                    '<pre><code class="language-python">{}</code></pre>'.format(
+                        utils.escape_html(utils.get_args_raw(message))
+                    ),
                     utils.escape_html(self.censor(str(result))),
                 ),
             )
