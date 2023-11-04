@@ -121,6 +121,7 @@ class Events(InlineUnit):
                                 reply_markup=self.generate_markup(
                                     res.get("reply_markup")
                                 ),
+                                hide_url=True,
                             )
                             if "message" in res
                             else (
