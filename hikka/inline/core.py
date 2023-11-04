@@ -263,5 +263,4 @@ class InlineManager(
             reply_to=(
                 message.reply_to_msg_id if isinstance(message, Message) else None
             ),
-            link_preview=False,
         )
