@@ -224,7 +224,10 @@ class Events(InlineUnit):
             return
 
         for func in self._allmodules.callback_handlers.values():
-            if await self.check_inline_security(func=func, user=call.from_user.id):
+            if (
+                getattr(func.__self__, 'callback_handlers_disable_security', False)
+                or await self.check_inline_security(func=func, user=call.from_user.id)
+            ):
                 try:
                     await func(
                         (
