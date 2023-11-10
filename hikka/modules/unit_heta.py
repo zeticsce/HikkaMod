@@ -119,14 +119,17 @@ class UnitHeta(loader.Module):
     async def _install(self, call: InlineCall, url: str, text: str):
         await call.edit(
             text,
-            reply_markup={
-                "text": (
-                    self.strings("loaded")
-                    if await self._load_module(url)
-                    else self.strings("not_loaded")
-                ),
-                "data": "empty",
-            },
+            reply_markup=[
+                {'text': '🎗 Source', 'url': url},
+                {
+                    "text": (
+                        self.strings("loaded")
+                        if await self._load_module(url)
+                        else self.strings("not_loaded")
+                    ),
+                    "data": "empty",
+                },
+            ]
         )
 
     @loader.command()
@@ -140,12 +143,6 @@ class UnitHeta(loader.Module):
                 requests.get,
                 "https://heta.hikariatama.ru/search",
                 params={"q": query, "limit": 1},
-                headers={
-                    "User-Agent": "Hikka Userbot",
-                    "X-Hikka-Version": ".".join(map(str, __version__)),
-                    "X-Hikka-Commit-SHA": utils.get_git_hash(),
-                    "X-Hikka-User": str(self._client.tg_id),
-                },
             )
         ):
             await utils.answer(message, self.strings("no_results"))
@@ -164,11 +161,14 @@ class UnitHeta(loader.Module):
         result = result[0]
         text = self._format_result(result, query)
 
-        mark = lambda text: {  # noqa: E731
-            "text": self.strings("install"),
-            "callback": self._install,
-            "args": (result["module"]["link"], text),
-        }
+        mark = lambda text: [ # noqa: E731
+            {'text': '🎗 Source', 'url': result["module"]["link"]},
+            {  
+                "text": self.strings("install"),
+                "callback": self._install,
+                "args": (result["module"]["link"], text),
+            },
+        ]
 
         form = await self.inline.form(
             message=message,
@@ -458,14 +458,17 @@ class UnitHeta(loader.Module):
                     self._format_result(module, query.args, True)
                 ),
                 "thumb": module["module"]["pic"],
-                "reply_markup": {
-                    "text": self.strings("install"),
-                    "callback": self._install,
-                    "args": (
-                        module["module"]["link"],
-                        self._format_result(module, query.args, True),
-                    ),
-                },
+                "reply_markup": [
+                    {'text': '🎗 Source', 'url': module["module"]["link"]},
+                    {
+                        "text": self.strings("install"),
+                        "callback": self._install,
+                        "args": (
+                            module["module"]["link"],
+                            self._format_result(module, query.args, True),
+                        ),
+                    },
+                ]
             }
             for module in response
         ]
@@ -481,13 +484,7 @@ class UnitHeta(loader.Module):
         ans = await utils.run_sync(
             requests.get,
             "https://heta.hikariatama.ru/resolve_hash",
-            params={"hash": mhash},
-            headers={
-                "User-Agent": "Hikka Userbot",
-                "X-Hikka-Version": ".".join(map(str, __version__)),
-                "X-Hikka-Commit-SHA": utils.get_git_hash(),
-                "X-Hikka-User": str(self._client.tg_id),
-            },
+            params={"hash": mhash}
         )
 
         if ans.status_code != 200:
