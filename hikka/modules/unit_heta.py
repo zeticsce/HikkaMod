@@ -221,7 +221,7 @@ class UnitHeta(loader.Module):
 
         return loaded
 
-    @loader.watcher("in", "only_messages", chat_id=1688624566, contains="Heta url: ")
+    # @loader.watcher("in", "only_messages", chat_id=1688624566, contains="Heta url: ")
     async def update_watcher(self, message: Message):
         url = message.raw_text.split("Heta url: ")[1].strip()
         dev, repo, mod = url.lower().split("hikariatama.ru/")[1].split("/")
@@ -267,13 +267,13 @@ class UnitHeta(loader.Module):
                         )
                         return
 
-    @loader.watcher(
-        "in",
-        "only_messages",
-        from_id=5519484330,
-        regex=r"^#install:.*?\/.*?\/.*?\n.*?\n\d+\n\n.*$",
-    )
-    async def watcher(self, message: Message):
+    # @loader.watcher(
+    #     "in",
+    #     "only_messages",
+    #     from_id=5519484330,
+    #     regex=r"^#install:.*?\/.*?\/.*?\n.*?\n\d+\n\n.*$",
+    # )
+    async def watcher_(self, message: Message):
         await message.delete()
 
         data = re.search(
