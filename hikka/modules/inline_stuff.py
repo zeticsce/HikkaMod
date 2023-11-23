@@ -21,36 +21,36 @@ class InlineStuff(loader.Module):
 
     strings = {"name": "InlineStuff"}
 
-    @loader.watcher(
-        "out",
-        "only_inline",
-        contains="This message will be deleted automatically",
-    )
-    async def watcher(self, message: Message):
-        if message.via_bot_id == self.inline.bot_id:
-            await message.delete()
+    # @loader.watcher(
+    #     "out",
+    #     "only_inline",
+    #     contains="This message will be deleted automatically",
+    # )
+    # async def watcher(self, message: Message):
+    #     if message.via_bot_id == self.inline.bot_id:
+    #         await message.delete()
 
-    @loader.watcher("out", "only_inline", contains="Opening gallery...")
-    async def gallery_watcher(self, message: Message):
-        if message.via_bot_id != self.inline.bot_id:
-            return
+    # @loader.watcher("out", "only_inline", contains="Opening gallery...")
+    # async def gallery_watcher(self, message: Message):
+    #     if message.via_bot_id != self.inline.bot_id:
+    #         return
 
-        id_ = re.search(r"#id: ([a-zA-Z0-9]+)", message.raw_text)[1]
+    #     id_ = re.search(r"#id: ([a-zA-Z0-9]+)", message.raw_text)[1]
 
-        await message.delete()
+    #     await message.delete()
 
-        m = await message.respond("🌘", reply_to=utils.get_topic(message))
+    #     m = await message.respond("🌘", reply_to=utils.get_topic(message))
 
-        await self.inline.gallery(
-            message=m,
-            next_handler=self.inline._custom_map[id_]["handler"],
-            caption=self.inline._custom_map[id_].get("caption", ""),
-            force_me=self.inline._custom_map[id_].get("force_me", False),
-            disable_security=self.inline._custom_map[id_].get(
-                "disable_security", False
-            ),
-            silent=True,
-        )
+    #     await self.inline.gallery(
+    #         message=m,
+    #         next_handler=self.inline._custom_map[id_]["handler"],
+    #         caption=self.inline._custom_map[id_].get("caption", ""),
+    #         force_me=self.inline._custom_map[id_].get("force_me", False),
+    #         disable_security=self.inline._custom_map[id_].get(
+    #             "disable_security", False
+    #         ),
+    #         silent=True,
+    #     )
 
     async def _check_bot(self, username: str) -> bool:
         async with self._client.conversation("@BotFather", exclusive=False) as conv:
