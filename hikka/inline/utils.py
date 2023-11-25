@@ -744,6 +744,8 @@ class Utils(InlineUnit):
                 or "input" in button
                 or "data" in button
                 or "action" in button
+                or 'switch_inline_query_current_chat' in button
+                or 'switch_inline_query' in button
                 for button in row
             )
             for row in buttons
