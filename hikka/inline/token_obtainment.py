@@ -57,7 +57,7 @@ class TokenObtainment(InlineUnit):
 
                 '/setprivacy',
                 username,
-                'Enabled',
+                'Disable',
 
                 "/setuserpic",
                 username,
