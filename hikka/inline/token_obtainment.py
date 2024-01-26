@@ -54,6 +54,11 @@ class TokenObtainment(InlineUnit):
             for msg in [
                 f"🌘 Hikka Userbot of {self._name}"[:64],
                 username,
+
+                '/setprivacy',
+                username,
+                'Enabled',
+
                 "/setuserpic",
                 username,
             ]:
