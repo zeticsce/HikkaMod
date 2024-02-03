@@ -189,11 +189,7 @@ class Database(dict):
 
         return True
 
-    def save(self):
-        asyncio.ensure_future(self._save())
-        return
-
-    async def _save(self) -> bool:
+    def save(self) -> bool:
         """Save database"""
         if not self.process_db_autofix(self):
             try:
