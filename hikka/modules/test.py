@@ -347,7 +347,8 @@ class TestMod(loader.Module):
             await utils.answer(message, self.strings("suspend_invalid_time"))
 
     @loader.command()
-    async def ping(self, message: Message):
+    async def oping(self, message: Message):
+        """Legacy ping command"""
         start = time.perf_counter_ns()
         message = await utils.answer(message, "🌘")
 
@@ -355,6 +356,16 @@ class TestMod(loader.Module):
             message,
             self.strings("results_ping").format(
                 round((time.perf_counter_ns() - start) / 10**6, 3),
+                utils.formatted_uptime(),
+            )
+        )
+
+    @loader.command()
+    async def ping(self, message: Message):
+        await utils.answer(
+            message,
+            self.strings("results_ping").format(
+                round(time.time() - message.date.timestamp(), 3),
                 utils.formatted_uptime(),
             )
         )
