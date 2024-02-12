@@ -362,10 +362,13 @@ class TestMod(loader.Module):
 
     @loader.command()
     async def ping(self, message: Message):
+        start = message.date.timestamp()
+        message = await utils.answer(message, "🌘")
+
         await utils.answer(
             message,
             self.strings("results_ping").format(
-                round(time.time() - message.date.timestamp(), 3),
+                round(time.time() - start, 3),
                 utils.formatted_uptime(),
             )
         )
