@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import time
+import aiofiles
 
 try:
     import redis
@@ -189,7 +190,11 @@ class Database(dict):
 
         return True
 
-    def save(self) -> bool:
+    def save(self):
+        asyncio.ensure_future(self.asave())
+        return True
+
+    async def asave(self) -> bool:
         """Save database"""
         if not self.process_db_autofix(self):
             try:
@@ -223,7 +228,9 @@ class Database(dict):
             return True
 
         try:
-            self._db_file.write_text(json.dumps(self, indent=4))
+            # self._db_file.write_text(json.dumps(self, indent=4))
+            async with aiofiles.open(str(self._db_file), mode='w') as f:
+                await f.write(json.dumps(self, indent=4))
         except Exception:
             logger.exception("Database save failed!")
             return False
