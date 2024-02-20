@@ -5,13 +5,11 @@
 # 🔑 https://www.gnu.org/licenses/agpl-3.0.html
 
 import asyncio
-import base64
 import contextlib
 import difflib
 import inspect
 import io
 import logging
-import random
 import re
 import typing
 
@@ -23,6 +21,7 @@ from hikkatl.utils import resolve_inline_message_id
 from .. import loader, main, utils
 from ..types import InlineCall, InlineQuery
 from ..version import __version__
+from ..types import InlineCall
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +108,7 @@ class UnitHeta(loader.Module):
         )
 
         self._nonick = self._db.pointer(main.__name__, "nonickusers", [])
+        self._locked_mods = self._db.pointer(main.__name__, "locked_share_modules", [])
 
         if self.get("nomute"):
             return
@@ -221,88 +221,7 @@ class UnitHeta(loader.Module):
 
         return loaded
 
-    # @loader.watcher("in", "only_messages", chat_id=1688624566, contains="Heta url: ")
-    async def update_watcher(self, message: Message):
-        url = message.raw_text.split("Heta url: ")[1].strip()
-        dev, repo, mod = url.lower().split("hikariatama.ru/")[1].split("/")
-
-        if dev == "hikariatama" and repo == "ftg":
-            urls = [f"https://mods.hikariatama.ru/{mod}", url]
-            if any(
-                getattr(module, "__origin__", None).lower().strip("/") in urls
-                for module in self.allmodules.modules
-            ):
-                await self._load_module(urls[0])
-                await asyncio.sleep(random.randint(1, 10))
-                await self._client.inline_query(
-                    "@hikkamods_bot",
-                    f"#confirm_update_noheta {url.split('hikariatama.ru/')[1]}",
-                )
-                return
-
-        if any(
-            getattr(module, "__origin__", "").lower().strip("/")
-            == url.lower().strip("/")
-            for module in self.allmodules.modules
-        ):
-            await self._load_module(url)
-            await asyncio.sleep(random.randint(1, 10))
-            await self._client.inline_query(
-                "@hikkamods_bot",
-                f"#confirm_update {url.split('hikariatama.ru/')[1]}",
-            )
-            return
-
-        for module in self.allmodules.modules:
-            link = getattr(module, "__origin__", "").lower().strip("/")
-            for regex in REGEXES:
-                if regex.search(link):
-                    ldev, lrepo, lmod = regex.search(link).groups()
-                    if ldev == dev and lrepo == repo and lmod == mod:
-                        await self._load_module(link)
-                        await asyncio.sleep(random.randint(1, 10))
-                        await self._client.inline_query(
-                            "@hikkamods_bot",
-                            f"#confirm_update_noheta {url.split('hikariatama.ru/')[1]}",
-                        )
-                        return
-
-    # @loader.watcher(
-    #     "in",
-    #     "only_messages",
-    #     from_id=5519484330,
-    #     regex=r"^#install:.*?\/.*?\/.*?\n.*?\n\d+\n\n.*$",
-    # )
-    async def watcher_(self, message: Message):
-        await message.delete()
-
-        data = re.search(
-            r"^#install:(?P<file>.*?\/.*?\/.*?)\n(?P<sig>.*?)\n(?P<dl_id>\d+)\n\n.*$",
-            message.raw.text,
-        )
-
-        uri = data["file"]
-        try:
-            rsa.verify(
-                rsa.compute_hash(uri.encode(), "SHA-1"),
-                base64.b64decode(data["sig"]),
-                PUBKEY,
-            )
-        except rsa.pkcs1.VerificationError:
-            logger.error("Got message with non-verified signature %s", uri)
-            return
-
-        await self._load_module(
-            f"https://heta.hikariatama.ru/{uri}",
-            int(data["dl_id"]),
-        )
-
-    @loader.command()
-    async def mlcmd(self, message: Message):
-        if not (args := utils.get_args_raw(message)):
-            await utils.answer(message, self.strings("args"))
-            return
-
+    def _find_module(self, args: str) -> typing.Tuple[str, bool]:
         exact = True
         if not (
             class_name := next(
@@ -340,31 +259,17 @@ class UnitHeta(loader.Module):
                     None,
                 )
             ):
-                await utils.answer(message, self.strings("404"))
-                return
-
+                return None, None
+            
             exact = False
+    
+        return class_name, exact
 
-        try:
-            module = self.lookup(class_name)
-            sys_module = inspect.getmodule(module)
-        except Exception:
-            await utils.answer(message, self.strings("404"))
-            return
-
+    def _gen_ml_strings(self, module: loader.Module, exact: bool):
         link = module.__origin__
+        class_name = module.__class__.__name__
 
-        text = (
-            f"<b>🧳 {utils.escape_html(class_name)}</b>"
-            if not utils.check_url(link)
-            else (
-                f'📼 <b><a href="{link}">Link</a> for'
-                f" {utils.escape_html(class_name)}:</b>"
-                f' <code>{link}</code>\n\n{self.strings("not_exact") if not exact else ""}'
-            )
-        )
-
-        text = (
+        return (
             self.strings("link").format(
                 class_name=utils.escape_html(class_name),
                 url=link,
@@ -379,14 +284,104 @@ class UnitHeta(loader.Module):
             )
         )
 
+    @loader.command()
+    async def mllockcmd(self, message: Message):
+        if not (args := utils.get_args_raw(message)):
+            await utils.answer(
+                message, 
+                self.strings("lock_mods_list").format(
+                    '\n'.join(
+                        f'<emoji document_id=5456340205323690036>▫️</emoji> <code>{name}</code>'
+                        for name in self._locked_mods
+                    )
+                )
+            )
+            return
+
+        class_name, exact = self._find_module(args.lower())
+
+        if not class_name or not exact:
+            await utils.answer(message, self.strings("404"))
+            return
+
+        class_name = class_name.lower()
+        
+        (
+            self._locked_mods.remove
+            if (unlocked := class_name in self._locked_mods) else
+            self._locked_mods.append
+        )(class_name)
+
+        return await utils.answer(
+            message,
+            self.strings('unlock_mod' if unlocked else 'lock_mod').format(
+                class_name
+            )
+        )
+
+    @loader.command()
+    async def mlcmd(self, message: Message):
+        if not (args := utils.get_args_raw(message)):
+            await utils.answer(message, self.strings("args"))
+            return
+
+        class_name, exact = self._find_module(args)
+
+        if not class_name:
+            await utils.answer(message, self.strings("404"))
+            return
+
+        if class_name.lower() in self._locked_mods:
+            return await utils.answer(message, self.strings('cannot_share'))
+
+        return await self.inline.form(
+            self._escape_custom_emojis(
+                self.strings('share_module').format(
+                    class_name=class_name, 
+                    not_exact=self.strings("not_exact") if not exact else ""
+                )
+            ),
+            message,
+            reply_markup=[
+                [
+                    {
+                        'text': '📤 Share',
+                        'callback': self.inline_ml, 'args': (message, class_name, exact)
+                    },
+                    {'text': '🚫 Cancel', 'action': 'close'}
+                ]
+            ],
+            silent=True
+        )
+
+    @staticmethod
+    def _escape_custom_emojis(text: str) -> str:
+        return re.sub(r'<emoji document_id=\d+>(.+?)</emoji>', lambda r: r.group(1), text)
+
+    async def inline_ml(self, call: InlineCall, message: Message, class_name: str, exact: bool):
+        if class_name.lower() in self._locked_mods:
+            return await call.answer(self.strings('cannot_share'))
+        try:
+            module = self.lookup(class_name)
+            sys_module = inspect.getmodule(module)
+        except Exception:
+            return await call.answer(
+                self._escape_custom_emojis(self.strings("404")),
+                show_alert=True
+            )
+
         file = io.BytesIO(sys_module.__loader__.data)
         file.name = f"{class_name}.py"
         file.seek(0)
 
+        asyncio.ensure_future(call.delete())
         await utils.answer_file(
             message,
             file,
-            caption=text,
+            caption=self._gen_ml_strings(module, exact),
+            reply_to=getattr(
+                message.reply_to,'reply_to_message_id', message.id
+            )
         )
 
     def _format_result(
