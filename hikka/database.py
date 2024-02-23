@@ -63,6 +63,7 @@ class Database(dict):
         self._me: User = None
         self._redis: redis.Redis = None
         self._saving_task: asyncio.Future = None
+        self._asave_lock: asyncio.Lock = asyncio.Lock()
 
     def __repr__(self):
         return object.__repr__(self)
@@ -228,9 +229,9 @@ class Database(dict):
             return True
 
         try:
-            # self._db_file.write_text(json.dumps(self, indent=4))
-            async with aiofiles.open(str(self._db_file), mode='w') as f:
-                await f.write(json.dumps(self, indent=4))
+            async with self._asave_lock:
+                async with aiofiles.open(str(self._db_file), mode='w') as f:
+                    await f.write(json.dumps(self, indent=4))
         except Exception:
             logger.exception("Database save failed!")
             return False
