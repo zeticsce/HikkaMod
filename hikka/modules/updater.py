@@ -295,11 +295,14 @@ class UpdaterMod(loader.Module):
             return
 
         try:
+            get_id = lambda x: getattr(x, 'id', 1)
             folder_id = (
-                max(
-                    folders,
-                    key=lambda x: x.id,
-                ).id
+                get_id(
+                    max(
+                        folders,
+                        key=get_id,
+                    )
+                )
                 + 1
             )
         except ValueError:

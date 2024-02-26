@@ -15,5 +15,6 @@ psutil==5.9.4
 tgcrypto==1.2.5
 rsa==4.9
 ruamel.yaml==0.17.21
+aiofiles==23.2.1
 
 # Python 3.8+
