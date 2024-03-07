@@ -231,7 +231,7 @@ class Database(dict):
 
         try:
             async with self._save_lock:
-                async with aiofiles.open(self._db_file, 'w+') as f:
+                async with aiofiles.open(self._db_file, 'w') as f:
                     await f.write(orjson.dumps(self).decode())
 
         except Exception:

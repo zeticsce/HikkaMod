@@ -137,8 +137,10 @@ class UpdaterMod(loader.Module):
             if client is not message.client:
                 await client.disconnect()
 
-        await message.client.disconnect()
-        restart()
+        async with self._db._save_lock:
+            await asyncio.sleep(1)
+            await message.client.disconnect()
+            restart()
 
     async def download_common(self):
         try:
