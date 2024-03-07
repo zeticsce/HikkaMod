@@ -11,6 +11,7 @@ import orjson
 import logging
 import os
 import time
+import aiofiles
 
 try:
     import redis
@@ -63,6 +64,7 @@ class Database(dict):
         self._me: User = None
         self._redis: redis.Redis = None
         self._saving_task: asyncio.Future = None
+        self._save_lock: asyncio.Lock = asyncio.Lock()
 
     def __repr__(self):
         return object.__repr__(self)
@@ -191,6 +193,10 @@ class Database(dict):
         return True
 
     def save(self) -> bool:
+        asyncio.ensure_future(self.asave())
+        return True
+
+    async def asave(self) -> bool:
         """Save database"""
         if not self.process_db_autofix(self):
             try:
@@ -224,7 +230,10 @@ class Database(dict):
             return True
 
         try:
-            self._db_file.write_text(orjson.dumps(self).decode())
+            async with self._save_lock:
+                async with aiofiles.open(self._db_file, 'w+') as f:
+                    await f.write(orjson.dumps(self).decode())
+
         except Exception:
             logger.exception("Database save failed!")
             return False
@@ -285,14 +294,14 @@ class Database(dict):
 
         if not utils.is_serializable(key):
             raise RuntimeError(
-                "Attempted to write object to "
+                "[key] Attempted to write object to "
                 f"{key=} ({type(key)=}) of database. It is not "
                 "JSON-serializable key which will cause errors"
             )
 
         if not utils.is_serializable(value):
             raise RuntimeError(
-                "Attempted to write object of "
+                "[value] Attempted to write object of "
                 f"{key=} ({type(value)=}) to database. It is not "
                 "JSON-serializable value which will cause errors"
             )
