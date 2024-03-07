@@ -29,6 +29,7 @@ import functools
 import inspect
 import io
 import json
+import orjson
 import logging
 import os
 import random
@@ -1271,7 +1272,7 @@ def is_serializable(x: typing.Any, /) -> bool:
     :return: True if object is JSON-serializable, False otherwise
     """
     try:
-        json.dumps(x)
+        orjson.dumps(x)
         return True
     except Exception:
         return False

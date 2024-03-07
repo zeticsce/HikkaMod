@@ -9,6 +9,7 @@ import contextlib
 import datetime
 import io
 import json
+import orjson
 import logging
 import os
 import time
@@ -121,7 +122,7 @@ class HikkaBackupMod(loader.Module):
                 self.get("last_backup") + self.get("period") - time.time()
             )
 
-            backup = io.BytesIO(json.dumps(self._db).encode())
+            backup = io.BytesIO(orjson.dumps(self._db))
             backup.name = (
                 f"hikka-db-backup-{datetime.datetime.now():%d-%m-%Y-%H-%M}.json"
             )
@@ -136,7 +137,7 @@ class HikkaBackupMod(loader.Module):
 
     @loader.command()
     async def backupdb(self, message: Message):
-        txt = io.BytesIO(json.dumps(self._db).encode())
+        txt = io.BytesIO(orjson.dumps(self._db))
         txt.name = f"db-backup-{datetime.datetime.now():%d-%m-%Y-%H-%M}.json"
         await self._client.send_file(
             "me",
@@ -157,7 +158,7 @@ class HikkaBackupMod(loader.Module):
             return
 
         file = await reply.download_media(bytes)
-        decoded_text = json.loads(file.decode())
+        decoded_text = orjson.loads(file.decode())
 
         # with contextlib.suppress(KeyError):
         #     decoded_text["hikka.inline"].pop("bot_token")

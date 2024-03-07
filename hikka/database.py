@@ -7,6 +7,7 @@
 import asyncio
 import collections
 import json
+import orjson
 import logging
 import os
 import time
@@ -145,8 +146,8 @@ class Database(dict):
             return
 
         try:
-            self.update(**json.loads(self._db_file.read_text()))
-        except json.decoder.JSONDecodeError:
+            self.update(**orjson.loads(self._db_file.read_text()))
+        except orjson.JSONDecodeError:
             logger.warning("Database read failed! Creating new one...")
         except FileNotFoundError:
             logger.debug("Database file not found, creating new one...")
@@ -223,7 +224,7 @@ class Database(dict):
             return True
 
         try:
-            self._db_file.write_text(json.dumps(self, indent=4))
+            self._db_file.write_text(orjson.dumps(self).decode())
         except Exception:
             logger.exception("Database save failed!")
             return False
