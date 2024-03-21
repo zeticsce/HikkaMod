@@ -7,7 +7,6 @@
 import inspect
 import logging
 import os
-import random
 import time
 import typing
 from io import BytesIO
@@ -16,6 +15,9 @@ from hikkatl.tl.types import Message
 
 from .. import loader, main, utils
 from ..inline.types import InlineCall
+
+from aiogram.types.input_file import InputFile
+
 
 logger = logging.getLogger(__name__)
 
@@ -134,11 +136,43 @@ class TestMod(loader.Module):
                             None,
                             save_fs=False,
                         )
+                        await self._send_debugmod(
+                            module_instance=self.lookup(module.name.rsplit('.', 1)[0]),
+                            module_path=module.path
+                        )
                     except Exception:
                         logger.exception("Failed to reload module in watchdog")
         except Exception:
             logger.exception("Failed debugging watchdog")
             return
+
+    async def _send_debugmod(
+        self,
+        module_instance: loader.Module,
+        module_path: str
+    ):
+        with open(module_path, 'rb') as f:
+            file = BytesIO(f.read())
+            file.name = f'{module_instance.__class__.__name__}.py'
+
+        try:
+            ver = '.'.join(map(str, list(module_instance.__version__)))
+        except Exception:
+            ver = 'Unknown'
+
+        text = (
+            f'🌘 <b>Debug module:</b> «<code>{module_instance.__class__.__name__}</code>»\n'
+            f'ℹ️ <b>Version:</b> <code>{ver}</code>'
+        )
+
+        try:
+            await self.inline.bot.send_document(
+                f'-100{self._debugmods_chat.id}',
+                document=InputFile(file),
+                caption=text
+            )
+        except Exception:
+            await self._client.send_file(self._debugmods_chat, file, caption=text)
 
     @loader.command()
     async def debugmod(self, message: Message):
@@ -381,6 +415,16 @@ class TestMod(loader.Module):
             silent=True,
             invite_bot=True,
             avatar="https://github.com/hikariatama/assets/raw/master/hikka-logs.png",
+        )
+
+        self._debugmods_chat, _ = await utils.asset_channel(
+            self._client,
+            "hikka-debugmods",
+            "Debug modules backups",
+            archive=True,
+            invite_bot=True,
+            avatar="https://raw.githubusercontent.com/hikariatama/assets/master/bot_pfp.png",
+            _folder="hikka",
         )
 
         self.logchat = int(f"-100{chat.id}")
