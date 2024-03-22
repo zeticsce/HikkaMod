@@ -73,6 +73,12 @@ class TestMod(loader.Module):
                 validator=loader.validators.Boolean(),
                 on_change=self._pass_config_to_logger,
             ),
+            loader.ConfigValue(
+                "backup_debug_modules",
+                False,
+                "After reloading the debug module, send it to the hikka-debugmods chat",
+                validator=loader.validators.Boolean(),
+            ),
         )
 
     def _pass_config_to_logger(self):
@@ -136,10 +142,11 @@ class TestMod(loader.Module):
                             None,
                             save_fs=False,
                         )
-                        await self._send_debugmod(
-                            module_instance=self.lookup(module.name.rsplit('.', 1)[0]),
-                            module_path=module.path
-                        )
+                        if self.config['backup_debug_modules']:
+                            await self._send_debugmod(
+                                module_instance=self.lookup(module.name.rsplit('.', 1)[0]),
+                                module_path=module.path
+                            )
                     except Exception:
                         logger.exception("Failed to reload module in watchdog")
         except Exception:
