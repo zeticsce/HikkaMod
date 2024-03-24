@@ -234,7 +234,7 @@ class Database(dict):
                 async with aiofiles.open(self._db_file, 'w') as f:
                     await f.write(orjson.dumps(self).decode())
                 
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.25)
         except Exception:
             logger.exception("Database save failed!")
             return False
