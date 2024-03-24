@@ -5,8 +5,6 @@
 # 🔑 https://www.gnu.org/licenses/agpl-3.0.html
 
 import typing
-import asyncio
-import random
 
 
 class PointerList(list):
@@ -112,7 +110,6 @@ class PointerDict(dict):
         self._key = key
         self._default = default
         super().__init__(db.get(module, key, default))
-        self._saving_task = asyncio.ensure_future(self._saving_poller())
 
     @property
     def data(self) -> dict:
@@ -164,17 +161,11 @@ class PointerDict(dict):
         super().clear()
         self._save()
 
-    def _save(self, hueta=False):
-        if hueta:
-            self._db.set(self._module, self._key, dict(self))
+    def _save(self):
+        self._db.set(self._module, self._key, dict(self))
 
     def todict(self):
         return self._db.get(self._module, self._key, self._default)
-
-    async def _saving_poller(self):
-        while True:
-            await asyncio.sleep(random.SystemRandom().randint(60, 120))
-            self._save(True)
 
 
 class BaseSerializingMiddlewareDict:
