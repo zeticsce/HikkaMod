@@ -72,8 +72,8 @@ class Database(dict):
     def _redis_save_sync(self):
         with self._redis.pipeline() as pipe:
             pipe.set(
-                str(self._client.tg_id),
-                json.dumps(self, ensure_ascii=True),
+                f'hikka-{self._client.tg_id}',
+                orjson.dumps(self),
             )
             pipe.execute()
 
@@ -103,6 +103,7 @@ class Database(dict):
             os.environ.get("REDIS_URL") or main.get_config_key("redis_uri")
         ):
             self._redis = redis.Redis.from_url(REDIS_URI)
+            logger.info('Redis database succefully inited!')
         else:
             return False
 
@@ -137,10 +138,11 @@ class Database(dict):
         if self._redis:
             try:
                 self.update(
-                    **json.loads(
+                    **orjson.loads(
                         self._redis.get(
-                            str(self._client.tg_id),
-                        ).decode(),
+                            f'hikka-{self._client.tg_id}',
+                        )
+                        or '{}'
                     )
                 )
             except Exception:
