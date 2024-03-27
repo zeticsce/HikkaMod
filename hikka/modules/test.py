@@ -424,15 +424,18 @@ class TestMod(loader.Module):
             avatar="https://github.com/hikariatama/assets/raw/master/hikka-logs.png",
         )
 
-        self._debugmods_chat, _ = await utils.asset_channel(
-            self._client,
-            "hikka-debugmods",
-            "Debug modules backups",
-            archive=True,
-            invite_bot=True,
-            avatar="https://raw.githubusercontent.com/hikariatama/assets/master/bot_pfp.png",
-            _folder="hikka",
-        )
+        try:
+            self._debugmods_chat, _ = await utils.asset_channel(
+                self._client,
+                "hikka-debugmods",
+                "Debug modules backups",
+                archive=True,
+                invite_bot=True,
+                avatar="https://raw.githubusercontent.com/hikariatama/assets/master/bot_pfp.png",
+                _folder="hikka",
+            )
+        except Exception:
+            logger.exception('Can\'t access hikka-debugmods chat')
 
         self.logchat = int(f"-100{chat.id}")
 
