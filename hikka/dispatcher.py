@@ -630,7 +630,7 @@ class CommandDispatcher:
         if utils.get_chat_id(message) in blacklist_chats or (
             whitelist_chats and utils.get_chat_id(message) not in whitelist_chats
         ):
-            logger.debug("Message is blacklisted")
+            # logger.debug("Message is blacklisted")
             return
 
         for func in self._modules.watchers:
@@ -659,11 +659,11 @@ class CommandDispatcher:
                 not in whitelist_modules
                 or await self._handle_tags(event, func)
             ):
-                logger.debug(
-                    "Ignored watcher of module %s because of %s",
-                    modname,
-                    await self._handle_tags_ext(event, func),
-                )
+                # logger.debug(
+                #     "Ignored watcher of module %s because of %s",
+                #     modname,
+                #     await self._handle_tags_ext(event, func),
+                # )
                 continue
 
             # Avoid weird AttributeErrors in weird dochub modules by settings placeholder

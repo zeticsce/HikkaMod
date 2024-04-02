@@ -79,22 +79,19 @@ class Database(dict):
 
     async def remote_force_save(self) -> bool:
         """Force save database to remote endpoint without waiting"""
-        if not self._redis:
-            return False
+        if self._redis:
+            await utils.run_sync(self._redis_save_sync)
+        else:
+            await self._local_save_async()
 
-        await utils.run_sync(self._redis_save_sync)
-        logger.debug("Published db to Redis")
         return True
 
     async def _redis_save(self) -> bool:
         """Save database to redis"""
-        if not self._redis:
-            return False
-
         await asyncio.sleep(5)
         await utils.run_sync(self._redis_save_sync)
-        logger.debug("Published db to Redis")
         self._saving_task = None
+        
         return True
 
     async def redis_init(self) -> bool:
@@ -156,93 +153,28 @@ class Database(dict):
         except FileNotFoundError:
             logger.debug("Database file not found, creating new one...")
 
-    def process_db_autofix(self, db: dict) -> bool:
-        if not utils.is_serializable(db):
-            return False
-
-        for key, value in db.copy().items():
-            if not isinstance(key, (str, int)):
-                logger.warning(
-                    "DbAutoFix: Dropped key %s, because it is not string or int",
-                    key,
-                )
-                continue
-
-            if not isinstance(value, dict):
-                # If value is not a dict (module values), drop it,
-                # otherwise it may cause problems
-                del db[key]
-                logger.warning(
-                    "DbAutoFix: Dropped key %s, because it is non-dict, but %s",
-                    key,
-                    type(value),
-                )
-                continue
-
-            for subkey in value:
-                if not isinstance(subkey, (str, int)):
-                    del db[key][subkey]
-                    logger.warning(
-                        (
-                            "DbAutoFix: Dropped subkey %s of db key %s, because it is"
-                            " not string or int"
-                        ),
-                        subkey,
-                        key,
-                    )
-                    continue
-
-        return True
-
     def save(self) -> bool:
-        asyncio.ensure_future(self.asave())
-        return True
-
-    async def asave(self) -> bool:
         """Save database"""
-        if not self.process_db_autofix(self):
-            try:
-                rev = self._revisions.pop()
-                while not self.process_db_autofix(rev):
-                    rev = self._revisions.pop()
-            except IndexError:
-                raise RuntimeError(
-                    "Can't find revision to restore broken database from "
-                    "database is most likely broken and will lead to problems, "
-                    "so its save is forbidden."
-                )
+        if not self._saving_task:
+            method = self._redis_save() if self._redis else self._local_save()
+            self._saving_task = asyncio.ensure_future(method)
 
-            self.clear()
-            self.update(**rev)
+        return True
+    
+    async def _local_save(self):
+        await asyncio.sleep(1)
+        return await self._local_save_async()
 
-            raise RuntimeError(
-                "Rewriting database to the last revision because new one destructed it"
-            )
-
-        if self._next_revision_call < time.time():
-            self._revisions += [dict(self)]
-            self._next_revision_call = time.time() + 3
-
-        while len(self._revisions) > 15:
-            self._revisions.pop()
-
-        if self._redis:
-            if not self._saving_task:
-                self._saving_task = asyncio.ensure_future(self._redis_save())
-            return True
-
+    async def _local_save_async(self) -> bool:
         try:
             async with self._save_lock:
-                async with aiofiles.open(self._db_file, 'w') as f:
-                    await f.write(orjson.dumps(self).decode())
-                
-                await asyncio.sleep(0.25)
+                async with aiofiles.open(self._db_file, 'wb') as f:
+                    await f.write(orjson.dumps(self))
         except Exception:
             logger.exception("Database save failed!")
             return False
-
         return True
-
+    
     async def store_asset(self, message: Message) -> int:
         """
         Save assets
@@ -288,27 +220,6 @@ class Database(dict):
 
     def set(self, owner: str, key: str, value: JSONSerializable) -> bool:
         """Set database key"""
-        if not utils.is_serializable(owner):
-            raise RuntimeError(
-                "Attempted to write object to "
-                f"{owner=} ({type(owner)=}) of database. It is not "
-                "JSON-serializable key which will cause errors"
-            )
-
-        if not utils.is_serializable(key):
-            raise RuntimeError(
-                "[key] Attempted to write object to "
-                f"{key=} ({type(key)=}) of database. It is not "
-                "JSON-serializable key which will cause errors"
-            )
-
-        if not utils.is_serializable(value):
-            raise RuntimeError(
-                "[value] Attempted to write object of "
-                f"{key=} ({type(value)=}) to database. It is not "
-                "JSON-serializable value which will cause errors"
-            )
-
         super().setdefault(owner, {})[key] = value
         return self.save()
 
