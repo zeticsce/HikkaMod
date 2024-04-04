@@ -138,7 +138,7 @@ class UpdaterMod(loader.Module):
                 await client.disconnect()
 
         async with self._db._save_lock:
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             await message.client.disconnect()
             restart()
 

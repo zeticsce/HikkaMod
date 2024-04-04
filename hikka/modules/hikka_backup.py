@@ -158,12 +158,10 @@ class HikkaBackupMod(loader.Module):
             return
 
         file = await reply.download_media(bytes)
-        decoded_text = orjson.loads(file.decode())
-
-        # with contextlib.suppress(KeyError):
-        #     decoded_text["hikka.inline"].pop("bot_token")
-
-        if not self._db.process_db_autofix(decoded_text):
+        
+        try:
+            decoded_text = orjson.loads(file)
+        except Exception:
             raise RuntimeError("Attempted to restore broken database")
 
         self._db.clear()
