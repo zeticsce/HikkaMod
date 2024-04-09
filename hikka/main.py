@@ -781,10 +781,16 @@ class Hikka:
                 print(logo)
                 self.omit_log = True
 
+            logging.info(
+                "· Started for %s · Prefix: «%s» ·",
+                client.tg_id,
+                client.hikka_db.get(__name__, "command_prefix", False) or ".",
+            )
+
             if client.tg_id in self.omit_log_clients:
-                return
-            else:
-                self.omit_log_clients.append(client.tg_id)
+                return 
+            
+            self.omit_log_clients.append(client.tg_id)
 
             await client.hikka_inline.bot.send_animation(
                 logging.getLogger().handlers[0].get_logid_by_client(client.tg_id),
@@ -800,12 +806,6 @@ class Hikka:
                         web_url,
                     )
                 ),
-            )
-
-            logging.info(
-                "· Started for %s · Prefix: «%s» ·",
-                client.tg_id,
-                client.hikka_db.get(__name__, "command_prefix", False) or ".",
             )
         except Exception:
             logging.exception("Badge error")
