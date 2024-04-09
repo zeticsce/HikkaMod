@@ -116,10 +116,6 @@ class List(InlineUnit):
             )
             return False
 
-        if len(strings) > 50:
-            logger.error("Too much pages for `strings` (%s)", len(strings))
-            return False
-
         if always_allow and not isinstance(always_allow, list):
             logger.error(
                 "Invalid type for `always_allow`. Expected `list`, got `%s`",

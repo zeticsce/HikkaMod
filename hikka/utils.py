@@ -511,9 +511,6 @@ async def answer(
 
                 strings = list(smart_split(text, entities, 4096))
 
-                if len(strings) > 10:
-                    raise
-
                 list_ = await message.client.loader.inline.list(
                     message=message,
                     strings=strings,
@@ -525,7 +522,7 @@ async def answer(
                 return list_
             except Exception:
                 file = io.BytesIO(text.encode("utf-8"))
-                file.name = "command_result.txt"
+                file.name = "cummand_result.txt"
 
                 result = await message.client.send_file(
                     message.peer_id,
