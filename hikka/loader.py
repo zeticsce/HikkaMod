@@ -22,6 +22,7 @@ from functools import wraps
 from pathlib import Path
 from types import FunctionType, ModuleType
 from uuid import uuid4
+import aiofiles
 
 from hikkatl.tl.tlobject import TLObject
 
@@ -700,7 +701,8 @@ class Modules:
             )
 
             if origin == "<string>":
-                Path(path).write_text(spec.loader.data.decode())
+                async with aiofiles.open(path, 'wb+') as f:
+                    await f.write(spec.loader.data)
 
                 logger.debug("Saved class %s to path %s", cls_name, path)
 
