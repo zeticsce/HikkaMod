@@ -168,7 +168,7 @@ class TestMod(loader.Module):
             ver = 'Unknown'
 
         text = (
-            f'🌘 <b>Debug module:</b> «<code>{module_instance.__class__.__name__}</code>»\n'
+            f'🌘 <b>Debug module:</b> #{module_instance.__class__.__name__}\n'
             f'ℹ️ <b>Version:</b> <code>{ver}</code>'
         )
 
@@ -352,7 +352,7 @@ class TestMod(loader.Module):
             *main.__version__,
             (
                 " <a"
-                f' href="https://github.com/hikariatama/Hikka/commit/{ghash}">@{ghash[:8]}</a>'
+                f' href="https://github.com/zeticsce/HikkaMod/commit/{ghash}">@{ghash[:8]}</a>'
                 if ghash
                 else ""
             ),
